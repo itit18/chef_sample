@@ -1,0 +1,49 @@
+# -*- mode: ruby -*-
+# vi: set ft=ruby :
+
+#
+# 初回up時にprovisionでこけるときにはrelaodして,もう一度provisionする
+#
+
+# 使用するroleを一つ選んでコメントを外す
+ROLE = (
+  # php開発環境用
+  # "php"
+
+  # ruby開発環境
+  # "ruby"
+  
+  # 何もなし
+  "none"
+).freeze # 安全のため
+
+Vagrant.configure(2) do |config|
+  config.vm.box = "bento/centos-6.7"
+
+  # 以下のローカルIPは他のVMと被らないように適当に設定する。
+  config.vm.network "private_network", ip: "192.168.33.99"
+
+  config.vm.define ROLE
+
+  ##############################################
+  # 以下の設定でローカルマシンのディレクトリと仮想マシンのディレクトリを結びつけます。
+  # 必要に応じて追加してください
+  ##############################################
+
+  modes = %w(dmode=777 fmode=777)
+  config.vm.synced_folder "../src", "/var/app/current", mount_options: modes
+
+  config.vm.provider "virtualbox" do |vb|
+    vb.memory = "2048"
+  end
+
+  # chefのプロビジョニング設定
+  config.vm.provision "chef_zero" do |chef|
+    # Berkshelfで入れたCommunity Cookbooks, 及び自前の
+    chef.cookbooks_path = %w(site-cookbooks)
+    chef.roles_path = "roles"
+    chef.nodes_path = "nodes" # vagnratのバージョンが古いとエラーになるので注意
+    chef.add_role ROLE if ROLE != "none"
+  end
+
+end

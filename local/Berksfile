@@ -1,0 +1,3 @@
+source 'https://supermarket.chef.io'
+
+cookbook 'terraform', '~> 1.0.1'

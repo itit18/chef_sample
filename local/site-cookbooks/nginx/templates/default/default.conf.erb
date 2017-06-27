@@ -1,0 +1,35 @@
+#
+# The default server
+#
+
+server {
+    listen       80 default_server;
+    listen       [::]:80 default_server;
+    server_name  _;
+    
+    # Load configuration files for the default server block.
+    include /etc/nginx/default.d/*.conf;
+
+    location / {
+      root  <%= node['root'] %>;
+      index <%= node['index'] %>;
+    }
+
+    location ~ \.php$ {
+      root           <%= node['root'] %>;
+      fastcgi_pass   unix:<%= node['socket_path'] %>;
+      fastcgi_index  <%= node['index'] %>;
+      #fastcgi_param  $document_root /$fastcgi_script_name;
+      fastcgi_param  SCRIPT_FILENAME <%= node['root'] %>$fastcgi_script_name;
+      include        fastcgi_params;
+    }
+
+    error_page 404 /404.html;
+        location = /40x.html {
+    }
+
+    error_page 500 502 503 504 /50x.html;
+        location = /50x.html {
+    }
+}
+

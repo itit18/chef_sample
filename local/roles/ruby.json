@@ -1,0 +1,16 @@
+{
+  "name": "terraform",
+  "chef_type": "role",
+  "json_class": "Chef::Role",
+  "default_attributes": {
+  },
+  "override_attributes": {
+    "terraform": {
+      "version": "0.7.1"
+    }
+  },
+  "run_list": [
+    "recipe[init]",
+    "recipe[rbenv]"
+  ]
+}

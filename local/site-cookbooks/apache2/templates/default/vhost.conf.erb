@@ -1,0 +1,13 @@
+#
+# defaultレシピで利用する公開ディレクトリ設定
+#
+
+Listen <%= @port %>
+NameVirtualHost <%= @name + ":" + @port %>
+
+<VirtualHost <%= @name + ":" + @port %> >
+    DocumentRoot <%= @DocumentRoot %>
+    ServerName <%= @ServerName %>
+    ErrorLog <%= @ErrorLog %>
+    CustomLog <%= @CustomLog %>
+</VirtualHost>

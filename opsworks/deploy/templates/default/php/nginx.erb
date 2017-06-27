@@ -1,0 +1,83 @@
+
+server {
+  listen <%= @environment[:http_port] || 80 %>;
+  server_name
+  <% @app[:domains].each do |domain| %>
+    <%= domain %>
+  <% end %>
+  ;
+
+  error_log <%= node['nginx']['log_dir'] %>/<%= @name %>.error.log<% if node['nginx']['error_log_options'] %> <%= node['nginx']['error_log_options'] %><% end %>;
+  access_log <%= node['nginx']['log_dir'] %>/<%= @name %>.access.log<% if node['nginx']['access_log_options'] %> <%= node['nginx']['access_log_options'] %><% end %>;
+
+  sendfile on;
+  root <%= @document_root %>;
+  index <%= @config[:index] || 'index.php' %>;
+
+  fastcgi_read_timeout 300;
+
+  <%- if @config[:maintenance] %>
+  set $redirect true;
+
+  if ($http_x_forwarded_for = '0.0.0.0') {
+    set $redirect false;
+  }
+  if ($uri ~ ^/healthcheck$ ){
+    set $redirect false;
+  }
+
+  if ($redirect = true) {
+    rewrite ^.*$ /maintenance.html last;
+  }
+  <% end -%>
+
+  <%- if @config[:allow_ip] && !@config[:allow_ip].empty? %>
+  set $allow false;
+
+  <% @config[:allow_ip].each do |ip| %>
+  if ($http_x_forwarded_for = '<%= ip %>') {
+    set $allow true;
+  }
+  <% end %>
+  if ($uri ~ ^/healthcheck$ ){
+    set $allow true;
+  }
+
+  if ($allow = false) {
+    return 403;
+  }
+  <% end -%>
+
+  location /msp/ {
+    rewrite ^.*$ / redirect;
+  }
+
+  location / {
+    try_files $uri $uri/ @rewrite-index;
+  }
+
+  location @rewrite-index {
+    rewrite ^(.*)$ /<%= @config[:index] %>$1 last;
+  }
+
+  location ~ [^/]\.php(/|$) {
+    fastcgi_split_path_info ^(.+\.php)(.*)$;
+
+    include fastcgi_params;
+
+    fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
+    fastcgi_param PATH_INFO $fastcgi_path_info;
+    fastcgi_param PATH_TRANSLATED $document_root$fastcgi_path_info;
+
+    <% @environment.each do |key, value| %>
+    fastcgi_param <%= key %> <%= value %>;
+    <% end %>
+
+    fastcgi_pass <%= @fastcgi_pass %>;
+  }
+
+  error_page 404              /404.html;
+  error_page 400 401 403      /4XX.html;
+  error_page 500 502 503 504  /5XX.html;
+}
+

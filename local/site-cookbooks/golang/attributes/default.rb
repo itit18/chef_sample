@@ -1,0 +1,1 @@
+default["gopath"] = '/var/go_app'

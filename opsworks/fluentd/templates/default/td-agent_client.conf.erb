@@ -1,0 +1,36 @@
+<% node[:fluentd][:sources].each do |source| %>
+<source>
+  type tail
+  path <%= source[:path] %>
+  tag <%= source[:tag] +"."+ node[:opsworks][:instance][:hostname] %>
+  pos_file /var/log/td-agent/<%= source[:tag] %>.pos
+  format <%= source[:format] %>
+  <% unless source[:time_key].empty? %>
+  time_key <%= source[:time_key] %>
+  time_format <%= source[:time_format] %>
+  <% end %>
+</source>
+
+<% end %>
+
+<match **>
+  type forward
+  send_timeout 20s
+  <server>
+    name <%= node[:fluentd][:name] +"."+ node[:fluentd][:main_host] %>
+    host <%= node[:fluentd][:main_host] %>
+    port <%= node[:fluentd][:port] %>
+  </server>
+  <server>
+    name <%= node[:fluentd][:name] +"."+ node[:fluentd][:standby_host] %>
+    host <%= node[:fluentd][:standby_host] %>
+    port <%= node[:fluentd][:port] %>
+    standby
+  </server>
+  <secondary>
+    type file
+    path /var/log/td-agent/secondary/forward-failed.log
+  </secondary>
+</match>
+
+
